@@ -1,5 +1,9 @@
 package accounts;
 
+import dbservice.DBException;
+import dbservice.DBService;
+import dbservice.datasets.UsersDataSet;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -8,20 +12,43 @@ import java.util.Map;
  */
 public class AccountService {
 
-    private final Map<String, UserProfile> loginToProfile;
+    //private final Map<String, UserProfile> loginToProfile;
     private final Map<String, UserProfile> sessionIdToProfile;
 
+    DBService dbService;
+
+
+
     public AccountService() {
-        loginToProfile = new HashMap<>();
+        dbService = new DBService();
+        dbService.printConnectInfo();
         sessionIdToProfile = new HashMap<>();
     }
 
-    public void addNewUser(UserProfile userProfile){
-        loginToProfile.put(userProfile.getLogin(), userProfile);
+    public void addNewUser(UserProfile userProfile) throws DBException{
+        try {
+        if (userProfile !=null) {
+            dbService.addUser(userProfile.getLogin(), userProfile.getPassword());
+        }else{
+            throw new DBException(new Exception("null argument was sent"));
+        }
+        }catch (Exception e){
+            throw new DBException(e);
+        }
     }
 
     public UserProfile getUserByLogin(String login){
-        return loginToProfile.get(login);
+        UserProfile userProfile = null;
+        try {
+            UsersDataSet usersDataSet = dbService.getUser(login);
+            if(usersDataSet != null) {
+                userProfile = new UserProfile(usersDataSet.getLogin(), usersDataSet.getPassword());
+            }
+        }catch (DBException e){
+            e.printStackTrace();
+        }finally {
+            return userProfile;
+        }
     }
 
     public void addSession(String sessionId, UserProfile userProfile){
